@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<title>FKTT-Betriebsstellendatenbl&auml;tter</title>
+</head>
+<body>
+    <h1>Die Betriebstellen des FKTT und ihre Daten</h1>
+<!--[if lt IE 9]>
+    <script>document.createElement("fktt-sds-plugin");</script>
+<![endif]-->
+<fktt-sds-plugin>index
+    <!-- BSTLIST_ENTRY_FOR_FKTT_PORTAL -->
+    <table>
+        <tr>
+            <td style="text-align:right;padding:0;"><label for="bstlist-column-select">Ordnen nach:</label></td>
+            <td style="padding: 0.5em;"><select name="bstlist-column-select" id="bstlist-column-select"></select></td>
+        </tr>
+        <tr>
+            <td style="text-align:right;padding:0;"><label for="bstlist-epoch-select">Epoche:</label></td>
+            <td style="padding: 0.5em;"><select name="bstlist-epoch-select" id="bstlist-epoch-select"></select></td>
+        </tr>
+        <tr>
+            <td style="text-align:right;padding:0;"><label for="bstlist-name-filter">Filter f&uuml;r Betriebsstellen:</label></td>
+            <td style="padding: 0.5em;"><input type="text" name="bstlist-name-filter" id="bstlist-name-filter"></td>
+        </tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td style="text-align:right;"><input type="button" value="Filter löschen" id="bstlist-filter-reset"></td>
+        </tr>
+    </table>
+    <table style="border-spacing:1px;border-collapse:separate;">
+        <thead>
+        <tr style="background-color:#C0C0C0;">
+            <th>Lfd. Nr.</th>
+            <th><span class="bstlist-column-sortable" style="display:none">Betriebsstellenname</span><span style="color:red;display:inline" class="bstlist-column-sortable">Betriebsstellenname&nbsp;&#8593;</span></th>
+            <th><span class="bstlist-column-sortable" style="display:inline">K&uuml;rzel</span><span style="color:red;display:none" class="bstlist-column-sortable">K&uuml;rzel&nbsp;&#8593;</span></th>
+            <th>Kategorie</th>
+            <th><span class="bstlist-column-sortable" style="display:inline">Letzte &Auml;nderung</span><span style="color:red;display:none" class="bstlist-column-sortable">Letzte &Auml;nderung&nbsp;&#8595;</span></th>
+            <th>Spezial Ansicht</th>
+        </tr>
+        </thead>
+        <tbody id="table-rows">
+        </tbody>
+    </table>
+    <div style="margin: 1rem 0;">Achtung! Die Betriebsstellendateien sind XML-Dateien und nur mit folgenden Browsern direkt ansehbar:
+        <ul>
+            <li>Internet Explorer ab Version 5</li>
+            <li>Opera ab Version 5.12</li>
+            <li>Netscape ab Version 6</li>
+            <li>Mozilla Firefox ab Version 1.0</li>
+        </ul>
+    </div>
+    <p><a href="https://github.com/fktt-module/datasheets/archive/refs/heads/main.zip" title="Archiv mit allen Datenblättern">Archiv mit allen Datenbl&auml;ttern</a>&nbsp;(<span id="zip-file-time-stamp"></span>)</p>
+    <!--  und Gelben Seiten -->
+    <script type="text/javascript">
+        <!--//--><![CDATA[//><!--
+        let bstlistHandler = function(baseUrl) {
+            const defaultEpoch = 'IV';
+            const languages = {0: 'DE', 1: 'EN', 2: 'CS'};
+            const sortingColumnOptions = [{
+                    description: 'Betriebsstellenname (aufsteigend)',
+                    style: ['none', 'inline', 'inline', 'none', 'inline', 'none'],
+                    compareFunction: function(a, b) { return a['name'].localeCompare(b['name']); }
+                }, {
+                    description: 'Kürzel (aufsteigend)',
+                    style: ['inline', 'none', 'none', 'inline', 'inline', 'none'],
+                    compareFunction: function(a, b) { return a['kuerzel'].localeCompare(b['kuerzel']); }
+                }, {
+                    description: 'Letzte Änderung (absteigend)',
+                    style: ['inline', 'none', 'inline', 'none', 'none', 'inline'],
+                    compareFunction: function (a, b) { return b['zeit'] >= a['zeit']; }
+                }];
+            const dateOptions = {
+                weekday: 'short', year: 'numeric', month: 'long', day: 'numeric',
+                hour: 'numeric', minute: 'numeric', second: undefined
+            }
+            const epochSelectElement = document.getElementById('bstlist-epoch-select');
+            const columnSelectElement = document.getElementById('bstlist-column-select');
+            const nameFilterElement = document.getElementById('bstlist-name-filter');
+            let allInEpochs = {};
+            function _ce(elementName) {
+                return document.createElement(elementName);
+            }
+            function createHyperRefElement(href, title, className, text) {
+                let _e = _ce('a');
+                _e.setAttribute('href', baseUrl + href);
+                _e.setAttribute('title', title);
+                _e.setAttribute('class', className);
+                _e.textContent = text;
+                return _e;
+            }
+            function createOptionElement(valueText, valueAttr = null, selected = false) {
+                let _e = _ce('option');
+                if (valueAttr !== null) _e.setAttribute('value', (valueAttr.includes('.xml')) ? baseUrl + valueAttr : valueAttr);
+                if (selected) _e.setAttribute('selected', 'selected')
+                _e.textContent = valueText;
+                return _e;
+            }
+            function buildLanguageSelection(kuerzel, viewid) {
+                let _e = _ce('select');
+                _e.setAttribute('size', '1');
+                _e.setAttribute('class', 'datasheet-lang-select');
+                _e.appendChild(createOptionElement(kuerzel, '#'));
+                // use sorted
+                // noinspection JSUnusedLocalSymbols
+                for (const [key, value] of Object.entries(languages).sort((a, b) => a[1].localeCompare(b[1]))) {
+                    _e.appendChild(createOptionElement(
+                        kuerzel + " (" + value + ")", viewid + '.xml?' + value.toLowerCase()));
+                }
+                return _e;
+            }
+            function createCellElement(content, centered = true) {
+                let _e = _ce('td');
+                if (centered) {
+                    _e.setAttribute('style', 'text-align:center;');
+                }
+                if (content instanceof HTMLElement) {
+                    _e.appendChild(content);
+                } else {
+                    _e.textContent = content;
+                }
+                return _e;
+            }
+            function createBuildTableRow(identifier, styles, cells = []) {
+                let _e = _ce('tr');
+                _e.setAttribute('id', identifier)
+                _e.setAttribute('style', styles);
+                for (let cell of cells) {
+                    _e.appendChild(cell);
+                }
+                return _e;
+            }
+            function transformRenderAndShow(xslUrl, xmlUrl) {
+                let xslt = fetch(baseUrl + xslUrl).then(result => result.text()).then(content => {
+                    let xsltProcessor = new XSLTProcessor();
+                    // noinspection JSCheckFunctionSignatures
+                    xsltProcessor.importStylesheet(new DOMParser().parseFromString(content, 'application/xml'));
+                    return xsltProcessor;
+                });
+                let xml = fetch(xmlUrl).then(result => result.text()).then(content => {
+                    // noinspection JSCheckFunctionSignatures
+                    return new DOMParser().parseFromString(content, 'application/xml');
+                });
+                Promise.all([xslt, xml]).then(([processor, xmlDocument]) => {
+                    let htmlDocument = processor.transformToDocument(xmlDocument);
+                    const printPreview = window.open('', 'Betriebsstellendatenblatt ' + htmlDocument.title);
+                    // check if there is an image tag in dom and update the url if present
+                    let trackmap = htmlDocument.body.getElementsByTagName('img')[0];
+                    if (trackmap !== undefined) {
+                        trackmap.setAttribute('src', baseUrl + trackmap.getAttribute('src'));
+                    }
+                    // https://stackoverflow.com/a/2032594
+                    // noinspection HtmlRequiredTitleElement
+                    let serialized =
+                        '<head>' +
+                            htmlDocument.head.innerHTML.replace('bahnhof.css', baseUrl + 'bahnhof.css') +
+                        '</head><body>' +
+                            htmlDocument.body.innerHTML +
+                        '</body>';
+                    const printDocument = printPreview.document;
+                    printDocument.open();
+                    printDocument.write(serialized);
+                    printDocument.close();
+                });
+            }
+            function buildUpdateTableRows(tableRowContent) {
+                // check if tbody has children elements aka content
+                let tbody = document.getElementById('table-rows');
+                if (tbody.hasChildNodes()) {
+                    tbody.textContent = '';
+                }
+                // let selectedEpoch = epochSelectElement.value;
+                // selectedEpoch = (selectedEpoch !== defaultEpoch ? '-' + selectedEpoch : '');
+
+                tableRowContent.forEach((value, index) => {
+                    let _date = new Date();
+                   _date.setTime(value['zeit']);
+                    tbody.appendChild(createBuildTableRow(
+                        value['kuerzel'].toLowerCase(),
+                        (index + 1) % 2 === 0 ? 'background-color:#dadada;' : 'background-color:#e0d5d5;',
+                        [
+                            createCellElement(((index + 1) <= 9 ? '0' + (index + 1) : (index + 1)) + '.'),
+                            createCellElement(
+                                createHyperRefElement(
+                                    value['viewid'] + '.xml',
+                                    value['name'],
+                                    'datasheet-view-select',
+                                    value['name']
+                                ), false),
+                            createCellElement(buildLanguageSelection(value['kuerzel'], value['viewid'])),
+                            createCellElement(value['typ']),
+                            createCellElement(_date.toLocaleString('de-DE', dateOptions), false),
+                            createCellElement(
+                                createHyperRefElement(
+                                    value['viewid'] + '.xml?',
+                                    value['kuerzel'],
+                                    'datasheet-view-fpl',
+                                    value['kuerzel']
+                                )
+                            ),
+                        ]
+                    ));
+                });
+                // add event handlers for the different views
+                Array.from(document.getElementsByClassName("datasheet-lang-select")).forEach(item => {
+                    item.addEventListener("change", event => {
+                        event.preventDefault();
+                        const tref = event.target.value;
+                        if (tref.length > 0 && tref !== '#') {
+                            const url = new URL(window.location + tref);
+                            let xslFileName = url.searchParams.keys().next().value;
+                            xslFileName = (typeof xslFileName === 'undefined' || xslFileName === 'de') ? '' : '_' + xslFileName;
+                            transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
+                        }
+                    });
+                });
+                Array.from(document.getElementsByClassName("datasheet-view-fpl")).forEach(item => {
+                    item.addEventListener("click", event => {
+                        event.preventDefault();
+                        const tref = event.target.href.replace('#', '');
+                        if (tref.length > 0 && tref !== '#') {
+                            // use url and query values for transform xml using xsl to html
+                            // openInWindow(tref, event.target.title);
+                            const url = new URL(window.location + tref);
+                            let xslFileName = url.searchParams.keys().next().value;
+                            xslFileName = (typeof xslFileName === 'undefined') ? '_fpl' : '_' + xslFileName;
+                            transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
+                        }
+                    });
+                });
+            }
+            function setZipLastEdited(allValues) {
+                let latest = null;
+                Object.keys(allValues).sort().forEach((value) => {
+                    // sort by latest first for each epoch
+                    allValues[value].sort(sortingColumnOptions[2].compareFunction);
+                    if (latest == null || latest < allValues[value][0]['zeit']) {
+                        latest = allValues[value][0]['zeit'];
+                    }
+                });
+                let _date = new Date();
+               _date.setTime(latest);
+                document.getElementById('zip-file-time-stamp').textContent = _date.toLocaleString('de-DE', dateOptions);
+            }
+            function changeEventHandler(event) {
+                if (event === null) {
+                    // reset all filters to default values
+                    epochSelectElement.selectedIndex = 3;
+                    columnSelectElement.selectedIndex = 0;
+                    nameFilterElement.value = "";
+                    //console.clear();
+                } else {
+                    event.preventDefault();
+                }
+                let epochSelection = epochSelectElement.value;
+                let sortingSelection = sortingColumnOptions[columnSelectElement.value];
+                allInEpochs[epochSelection].sort(sortingSelection.compareFunction);
+                Array.from(document.getElementsByClassName('bstlist-column-sortable')).forEach((item, index) => {
+                    // marks the table column head where to sort of
+                    item.style['display'] = sortingSelection.style[index];
+                })
+                if (nameFilterElement.value.trim().length > 0) {
+                    buildUpdateTableRows(allInEpochs[epochSelection].filter(value => {
+                        return nameFilterElement.value.trim().split(/[, ]+/).some(spl => {
+                            return value['name'].toLowerCase().includes(spl.trim().toLowerCase()) ||
+                            value['kuerzel'].toLowerCase().includes(spl.trim().toLowerCase());
+                        })
+                    }));
+                } else {
+                    buildUpdateTableRows(allInEpochs[epochSelection]);
+                }
+            }
+            return {
+                run: function(result) {
+                    // convert result json to an object containing arrays for each epoch
+                    for (const [key, val] of Object.entries(result)) {
+                        let ep = (key.indexOf('-') === -1) ? defaultEpoch : key.substring(key.indexOf('-') + 1);
+                        if (ep !== null) {
+                            // dynamically add epochs
+                            if (allInEpochs[ep] === undefined) {
+                                allInEpochs[ep] = [];
+                            }
+                            allInEpochs[ep].push(val);
+                        }
+                    }
+                    // all keys in json object are the epochs
+                    // => for each epoch add an option to a select element
+                    Object.keys(allInEpochs).sort().forEach((value) => {
+                        epochSelectElement.appendChild(createOptionElement(value, value, value === defaultEpoch));
+                        // default sort: all elements by name
+                        allInEpochs[value].sort(sortingColumnOptions[0].compareFunction);
+                    });
+                    sortingColumnOptions.forEach((key, value) => {
+                        columnSelectElement.appendChild(createOptionElement(key.description, value.toString()));
+                    });
+                    columnSelectElement.addEventListener('change', changeEventHandler);
+                    epochSelectElement.addEventListener('change', changeEventHandler);
+                    nameFilterElement.addEventListener('input', changeEventHandler);
+                    document.getElementById('bstlist-filter-reset').addEventListener('click', ev => {
+                        ev.preventDefault();
+                        changeEventHandler(null);
+                    });
+                    buildUpdateTableRows(allInEpochs[defaultEpoch]);
+                    setZipLastEdited(allInEpochs);
+                }
+            }
+        }
+        const baseUrl = '';
+        fetch(baseUrl + 'bahnhof.json').then(data => data.json()).then(content => bstlistHandler(baseUrl).run(content));
+    //--><!]]>
+    </script>
+    <!-- BSTLIST_FLUSH_FOR_FKTT_PORTAL -->
+</fktt-sds-plugin>
+</body>
+</html>
