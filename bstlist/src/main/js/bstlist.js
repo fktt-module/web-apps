@@ -49,7 +49,7 @@ let bstlistHandler = function(baseUrl) {
         // noinspection JSUnusedLocalSymbols
         for (const [key, value] of Object.entries(languages).sort((a, b) => a[1].localeCompare(b[1]))) {
             _e.appendChild(createOptionElement(
-                kuerzel + " (" + value + ")", viewid + '.xml?' + value.toLowerCase()));
+                kuerzel + " (" + value + ")", viewid + '.xml?view=' + value.toLowerCase()));
         }
         return _e;
     }
@@ -151,9 +151,9 @@ let bstlistHandler = function(baseUrl) {
                 event.preventDefault();
                 const tref = event.target.value;
                 if (tref.length > 0 && tref !== '#') {
-                    const url = new URL(window.location + tref);
-                    let xslFileName = url.searchParams.keys().next().value;
-                    xslFileName = (typeof xslFileName === 'undefined' || xslFileName === 'de') ? '' : '_' + xslFileName;
+                    const url = new URL(window.location + '&' + new URL(tref).search.substring(1));
+                    let xslFileName = url.searchParams.get('view');
+                    xslFileName = (xslFileName === null || xslFileName === 'de') ? '' : '_' + xslFileName;
                     transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
                 }
             });
@@ -165,9 +165,9 @@ let bstlistHandler = function(baseUrl) {
                 if (tref.length > 0 && tref !== '#') {
                     // use url and query values for transform xml using xsl to html
                     // openInWindow(tref, event.target.title);
-                    const url = new URL(window.location + tref);
-                    let xslFileName = url.searchParams.keys().next().value;
-                    xslFileName = (typeof xslFileName === 'undefined') ? '_fpl' : '_' + xslFileName;
+                    const url = new URL(window.location  + '&' + new URL(tref).search.substring(1));
+                    let xslFileName = url.searchParams.get('view');
+                    xslFileName = (xslFileName === null) ? '_fpl' : '_' + xslFileName;
                     transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
                 }
             });
