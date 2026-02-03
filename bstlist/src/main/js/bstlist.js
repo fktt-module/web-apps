@@ -249,5 +249,17 @@ let bstlistHandler = function(baseUrl) {
         }
     }
 }
-const baseUrl = '';
-fetch(baseUrl + 'bahnhof.json').then(data => data.json()).then(content => bstlistHandler(baseUrl).run(content));
+const el = document.querySelector('#bstlist-handler');
+const jsonOrUrl = el.dataset.jsonOrUrl.trim();
+fetch(jsonOrUrl)
+    .then((response) => {
+        if (response.ok) {
+            return response.json()
+        }
+        throw new Error(`Datei nicht gefunden: ${response.url}`);
+    })
+    .then(
+        content =>
+            bstlistHandler(jsonOrUrl.toString().substring(0, jsonOrUrl.toString().lastIndexOf('/') + 1)).run(content),
+        e => console.error(e)
+    );
