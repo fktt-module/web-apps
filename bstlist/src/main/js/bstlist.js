@@ -74,28 +74,25 @@ let bstlistHandler = function(baseUrl) {
         }
         return _e;
     }
-    function transformRenderAndShow(xslUrl, xmlUrl) {
-        let xslt = fetch(baseUrl + xslUrl).then(result => result.text()).then(content => {
-            let xsltProcessor = new XSLTProcessor();
-            // noinspection JSCheckFunctionSignatures
+    async function transformRenderAndShow(xslUrl, xmlUrl) {
+        const xslt = await fetch(baseUrl + xslUrl).then(result => result.text()).then(content => {
+            const xsltProcessor = new XSLTProcessor();
             xsltProcessor.importStylesheet(new DOMParser().parseFromString(content, 'application/xml'));
             return xsltProcessor;
         });
-        let xml = fetch(xmlUrl).then(result => result.text()).then(content => {
-            // noinspection JSCheckFunctionSignatures
+        const xml = await fetch(xmlUrl).then(result => result.text()).then(content => {
             return new DOMParser().parseFromString(content, 'application/xml');
         });
-        Promise.all([xslt, xml]).then(([processor, xmlDocument]) => {
-            let htmlDocument = processor.transformToDocument(xmlDocument);
+        return Promise.all([xslt, xml]).then(([processor, xmlDocument]) => {
+            const htmlDocument = processor.transformToDocument(xmlDocument.getRootNode());
             const printPreview = window.open('', 'Betriebsstellendatenblatt ' + htmlDocument.title);
             // check if there is an image tag in dom and update the url if present
-            let trackmap = htmlDocument.body.getElementsByTagName('img')[0];
+            const trackmap = htmlDocument.body.getElementsByTagName('img')[0];
             if (trackmap !== undefined) {
                 trackmap.setAttribute('src', baseUrl + trackmap.getAttribute('src'));
             }
             // https://stackoverflow.com/a/2032594
-            // noinspection HtmlRequiredTitleElement
-            let serialized =
+            const serialized =
                 '<head>' +
                 htmlDocument.head.innerHTML.replace('bahnhof.css', baseUrl + 'bahnhof.css') +
                 '</head><body>' +
@@ -103,6 +100,7 @@ let bstlistHandler = function(baseUrl) {
                 '</body>';
             const printDocument = printPreview.document;
             printDocument.open();
+            // TODO try to find an alternative for setting the document content
             printDocument.write(serialized);
             printDocument.close();
         });
@@ -154,7 +152,7 @@ let bstlistHandler = function(baseUrl) {
                     const url = new URL(window.location + '&' + new URL(tref).search.substring(1));
                     let xslFileName = url.searchParams.get('view');
                     xslFileName = (xslFileName === null || xslFileName === 'de') ? '' : '_' + xslFileName;
-                    transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
+                    void transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
                 }
             });
         });
@@ -168,7 +166,7 @@ let bstlistHandler = function(baseUrl) {
                     const url = new URL(window.location  + '&' + new URL(tref).search.substring(1));
                     let xslFileName = url.searchParams.get('view');
                     xslFileName = (xslFileName === null) ? '_fpl' : '_' + xslFileName;
-                    transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
+                    void transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
                 }
             });
         });
