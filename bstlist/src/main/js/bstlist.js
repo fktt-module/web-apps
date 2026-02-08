@@ -67,7 +67,7 @@ let bstlistHandler = function(baseUrl) {
     }
     function createBuildTableRow(identifier, styles, cells = []) {
         let _e = _ce('tr');
-        _e.setAttribute('id', identifier)
+        _e.setAttribute('id', identifier);
         _e.setAttribute('style', styles);
         for (let cell of cells) {
             _e.appendChild(cell);
