@@ -30,12 +30,13 @@ let bstlistHandler = function(baseUrl) {
         _e.setAttribute('href', baseUrl + href);
         _e.setAttribute('title', title);
         _e.setAttribute('class', className);
+        _e.setAttribute('target', '_blank');
         _e.textContent = text;
         return _e;
     }
     function createOptionElement(valueText, valueAttr = null, selected = false) {
         let _e = _ce('option');
-        if (valueAttr !== null) _e.setAttribute('value', (valueAttr.includes('.xml')) ? baseUrl + valueAttr : valueAttr);
+        if (valueAttr !== null) _e.setAttribute('value', (valueAttr.includes('.html')) ? baseUrl + valueAttr : valueAttr);
         if (selected) _e.setAttribute('selected', 'selected')
         _e.textContent = valueText;
         return _e;
@@ -49,7 +50,7 @@ let bstlistHandler = function(baseUrl) {
         // noinspection JSUnusedLocalSymbols
         for (const [key, value] of Object.entries(languages).sort((a, b) => a[1].localeCompare(b[1]))) {
             _e.appendChild(createOptionElement(
-                kuerzel + " (" + value + ")", viewid + '.xml?view=' + value.toLowerCase()));
+                kuerzel + " (" + value + ")", viewid + (value.toLowerCase() !== 'de' ? '_' + value.toLowerCase() : '') + '.html'));
         }
         return _e;
     }
@@ -74,37 +75,6 @@ let bstlistHandler = function(baseUrl) {
         }
         return _e;
     }
-    async function transformRenderAndShow(xslUrl, xmlUrl) {
-        const xslt = await fetch(baseUrl + xslUrl).then(result => result.text()).then(content => {
-            const xsltProcessor = new XSLTProcessor();
-            xsltProcessor.importStylesheet(new DOMParser().parseFromString(content, 'application/xml'));
-            return xsltProcessor;
-        });
-        const xml = await fetch(xmlUrl).then(result => result.text()).then(content => {
-            return new DOMParser().parseFromString(content, 'application/xml');
-        });
-        return Promise.all([xslt, xml]).then(([processor, xmlDocument]) => {
-            const htmlDocument = processor.transformToDocument(xmlDocument.getRootNode());
-            const printPreview = window.open('', 'Betriebsstellendatenblatt ' + htmlDocument.title);
-            // check if there is an image tag in dom and update the url if present
-            const trackmap = htmlDocument.body.getElementsByTagName('img')[0];
-            if (trackmap !== undefined) {
-                trackmap.setAttribute('src', baseUrl + trackmap.getAttribute('src'));
-            }
-            // https://stackoverflow.com/a/2032594
-            const serialized =
-                '<head>' +
-                htmlDocument.head.innerHTML.replace('bahnhof.css', baseUrl + 'bahnhof.css') +
-                '</head><body>' +
-                htmlDocument.body.innerHTML +
-                '</body>';
-            const printDocument = printPreview.document;
-            printDocument.open();
-            // TODO try to find an alternative for setting the document content
-            printDocument.write(serialized);
-            printDocument.close();
-        });
-    }
     function buildUpdateTableRows(tableRowContent) {
         // check if tbody has children elements aka content
         let tbody = document.getElementById('table-rows');
@@ -124,7 +94,7 @@ let bstlistHandler = function(baseUrl) {
                     createCellElement(((index + 1) <= 9 ? '0' + (index + 1) : (index + 1)) + '.'),
                     createCellElement(
                         createHyperRefElement(
-                            value['viewid'] + '.xml',
+                            value['viewid'] + '.html',
                             value['name'],
                             'datasheet-view-select',
                             value['name']
@@ -134,7 +104,7 @@ let bstlistHandler = function(baseUrl) {
                     createCellElement(_date.toLocaleString('de-DE', dateOptions), false),
                     createCellElement(
                         createHyperRefElement(
-                            value['viewid'] + '.xml?',
+                            value['viewid'] + '_fpl.html',
                             value['kuerzel'],
                             'datasheet-view-fpl',
                             value['kuerzel']
@@ -149,24 +119,7 @@ let bstlistHandler = function(baseUrl) {
                 event.preventDefault();
                 const tref = event.target.value;
                 if (tref.length > 0 && tref !== '#') {
-                    const url = new URL(window.location + '&' + new URL(tref).search.substring(1));
-                    let xslFileName = url.searchParams.get('view');
-                    xslFileName = (xslFileName === null || xslFileName === 'de') ? '' : '_' + xslFileName;
-                    void transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
-                }
-            });
-        });
-        Array.from(document.getElementsByClassName("datasheet-view-fpl")).forEach(item => {
-            item.addEventListener("click", event => {
-                event.preventDefault();
-                const tref = event.target.href.replace('#', '');
-                if (tref.length > 0 && tref !== '#') {
-                    // use url and query values for transform xml using xsl to html
-                    // openInWindow(tref, event.target.title);
-                    const url = new URL(window.location  + '&' + new URL(tref).search.substring(1));
-                    let xslFileName = url.searchParams.get('view');
-                    xslFileName = (xslFileName === null) ? '_fpl' : '_' + xslFileName;
-                    void transformRenderAndShow('bahnhof' + xslFileName + '.xsl', tref);
+                    window.open(tref, '_blank');
                 }
             });
         });
