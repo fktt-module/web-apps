@@ -247,7 +247,7 @@ let bstlistHandler = function(baseUrl) {
         }
     }
 }
-const el = document.querySelector('#bstlist-handler');
+const el = document.getElementById('bstlist-handler');
 const jsonOrUrl = el.dataset.jsonOrUrl.trim();
 fetch(jsonOrUrl)
     .then((response) => {
