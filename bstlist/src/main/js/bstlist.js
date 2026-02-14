@@ -124,8 +124,17 @@ let bstlistHandler = function(baseUrl) {
             });
         });
     }
-    function setZipLastEdited(allValues) {
-        let latest = null;
+    async function setZipLastEdited(allValues) {
+        let zipUrl = document.querySelector("#zip-file > a").getAttribute('href');
+        // use head request determining file exists and if so, display the paragraph with last change time stamp
+        return await fetch(zipUrl, {method: 'HEAD'}).then((response) => {
+            if (response.ok) {
+                let _date = new Date(Date.parse(response.headers.get("Last-Modified")));
+                document.getElementById('zip-file-time-stamp').textContent = _date.toLocaleString('de-DE', dateOptions);
+                document.getElementById('zip-file').setAttribute('style', 'display:block;');
+            }
+        });
+        /*let latest = null;
         Object.keys(allValues).sort().forEach((value) => {
             // sort by latest first for each epoch
             allValues[value].sort(sortingColumnOptions[2].compareFunction);
@@ -135,7 +144,7 @@ let bstlistHandler = function(baseUrl) {
         });
         let _date = new Date();
         _date.setTime(latest);
-        document.getElementById('zip-file-time-stamp').textContent = _date.toLocaleString('de-DE', dateOptions);
+        document.getElementById('zip-file-time-stamp').textContent = _date.toLocaleString('de-DE', dateOptions);*/
     }
     function changeEventHandler(event) {
         if (event === null) {
@@ -196,7 +205,7 @@ let bstlistHandler = function(baseUrl) {
                 changeEventHandler(null);
             });
             buildUpdateTableRows(allInEpochs[defaultEpoch]);
-            setZipLastEdited(allInEpochs);
+            void setZipLastEdited(allInEpochs);
         }
     }
 }
