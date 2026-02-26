@@ -12,49 +12,7 @@
 <![endif]-->
 <fktt-sds-plugin>
     <!-- BSTLIST_ENTRY_FOR_FKTT_PORTAL -->
-    <table>
-        <tr>
-            <td style="text-align:right;padding:0;"><label for="bstlist-column-select">Ordnen nach:</label></td>
-            <td style="padding: 0.5em;"><select name="bstlist-column-select" id="bstlist-column-select"></select></td>
-        </tr>
-        <tr>
-            <td style="text-align:right;padding:0;"><label for="bstlist-epoch-select">Epoche:</label></td>
-            <td style="padding: 0.5em;"><select name="bstlist-epoch-select" id="bstlist-epoch-select"></select></td>
-        </tr>
-        <tr>
-            <td style="text-align:right;padding:0;"><label for="bstlist-name-filter">Filter f&uuml;r Betriebsstellen:</label></td>
-            <td style="padding: 0.5em;"><input type="text" name="bstlist-name-filter" id="bstlist-name-filter"></td>
-        </tr>
-        <tr>
-            <td>&nbsp;</td>
-            <td style="text-align:right;"><input type="button" value="Filter löschen" id="bstlist-filter-reset"></td>
-        </tr>
-    </table>
-    <table style="border-spacing:1px;border-collapse:separate;">
-        <thead>
-        <tr style="background-color:#C0C0C0;">
-            <th>Lfd. Nr.</th>
-            <th><span class="bstlist-column-sortable" style="display:none">Betriebsstellenname</span><span style="color:red;display:inline" class="bstlist-column-sortable">Betriebsstellenname&nbsp;&#8593;</span></th>
-            <th><span class="bstlist-column-sortable" style="display:inline">K&uuml;rzel</span><span style="color:red;display:none" class="bstlist-column-sortable">K&uuml;rzel&nbsp;&#8593;</span></th>
-            <th>Kategorie</th>
-            <th><span class="bstlist-column-sortable" style="display:inline">Letzte &Auml;nderung</span><span style="color:red;display:none" class="bstlist-column-sortable">Letzte &Auml;nderung&nbsp;&#8595;</span></th>
-            <th>Spezial Ansicht</th>
-        </tr>
-        </thead>
-        <tbody id="table-rows">
-        </tbody>
-    </table>
-    <div style="margin: 1rem 0;">Achtung! Die Betriebsstellendateien sind XML-Dateien und nur mit folgenden Browsern direkt ansehbar:
-        <ul>
-            <li>Internet Explorer ab Version 5</li>
-            <li>Opera ab Version 5.12</li>
-            <li>Netscape ab Version 6</li>
-            <li>Mozilla Firefox ab Version 1.0</li>
-        </ul>
-    </div>
-    <p id="zip-file" style="display: none;"><a href="datasheets.zip" title="Archiv mit allen Datenblättern">Archiv mit allen Datenbl&auml;ttern</a>&nbsp;(<span id="zip-file-time-stamp"></span>)</p>
-    <!--  und Gelben Seiten -->
-    <script src="js/bstlist.js" type="text/javascript" id="bstlist-handler" data-json-or-url="bahnhof.json"></script>
+    <script src="js/bstlist.js" type="text/javascript" id="bstlist-anwendung" data-json-or-url="bahnhof.json" data-zip-file="datanblaetter_gelbe-seiten.zip" data-yellow-pages="gelbe-seiten.html"></script>
     <!-- BSTLIST_FLUSH_FOR_FKTT_PORTAL -->
 </fktt-sds-plugin>
 </body>
