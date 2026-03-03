@@ -85,6 +85,10 @@ class GelbeSeiten {
             '<th colspan="5" style="padding: 0.5em; text-align: left; font-weight: normal"><span id="gs-betriebsstellen-auswahl-anzeige"></span></th>' +
             '</tr>' +
             '<tr>' +
+            '<th colspan="6">&nbsp;</th>' +
+            '<th colspan="3"><button id="gs-aktuelle-ansicht-drucken">Aktuelle Ansicht drucken</button></th>' +
+            '</tr>' +
+            '<tr>' +
             '<th style="min-width: 154px;">Kategorie</th>' +
             '<th style="min-width: 154px;">Produkte</th>' +
             '<th style="min-width: 213px;">Versender</th>' +
@@ -320,6 +324,11 @@ class GelbeSeiten {
             });
             this.#erneuereAnzeigeBetriebsstellenAuswahl();
             this.#wendeGesamtFilterAufTabellenZeilenAn();
+        });
+
+        document.getElementById('gs-aktuelle-ansicht-drucken').addEventListener('click', (event) => {
+            event.preventDefault();
+            window.print();
         });
     }
 }
