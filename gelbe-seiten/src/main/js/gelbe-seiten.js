@@ -9,7 +9,8 @@ class GelbeSeiten {
         ladestelle: '',
         stueckgut: '',
         expressgut: '',
-        betriebsstellen: []
+        betriebsstellen: [],
+        empfang: []
     };
     #alleTabellenZeilenAktuelleEpoche = undefined;
     #gesamtFilter = undefined;
@@ -68,6 +69,19 @@ class GelbeSeiten {
         }
     }
 
+    #optionenElement = (wert, text) => {
+        const option = document.createElement('option');
+        option.value = wert;
+        option.text = text;
+        return option;
+    }
+
+    #clearElement = (element) => {
+        if (element.hasChildNodes()) {
+            element.innerHTML = '';
+        }
+    }
+
     erstelleBenutzerSchnittstelle(referenzKnoten) {
         // https://www.svgrepo.com/svg/497085/filter-search
         const sucheFilterBild = "data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg id='SVGRepo_bgCarrier' stroke-width='0'%3E%3C/g%3E%3Cg id='SVGRepo_tracerCarrier' stroke-linecap='round' stroke-linejoin='round'%3E%3C/g%3E%3Cg id='SVGRepo_iconCarrier'%3E%3Cpath d='M14.3201 19.07C14.3201 19.68 13.92 20.48 13.41 20.79L12.0001 21.7C10.6901 22.51 8.87006 21.6 8.87006 19.98V14.63C8.87006 13.92 8.47006 13.01 8.06006 12.51L4.22003 8.47C3.71003 7.96 3.31006 7.06001 3.31006 6.45001V4.13C3.31006 2.92 4.22008 2.01001 5.33008 2.01001H18.67C19.78 2.01001 20.6901 2.92 20.6901 4.03V6.25C20.6901 7.06 20.1801 8.07001 19.6801 8.57001' stroke='%23292D32' stroke-width='1.5' stroke-miterlimit='10' stroke-linecap='round' stroke-linejoin='round'%3E%3C/path%3E%3Cpath d='M16.07 16.52C17.8373 16.52 19.27 15.0873 19.27 13.32C19.27 11.5527 17.8373 10.12 16.07 10.12C14.3027 10.12 12.87 11.5527 12.87 13.32C12.87 15.0873 14.3027 16.52 16.07 16.52Z' stroke='%23292D32' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3C/path%3E%3Cpath d='M19.87 17.12L18.87 16.12' stroke='%23292D32' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3C/path%3E%3C/g%3E%3C/svg%3E";
@@ -85,7 +99,25 @@ class GelbeSeiten {
             '<th colspan="5" style="padding: 0.5em; text-align: left; font-weight: normal"><span id="gs-betriebsstellen-auswahl-anzeige"></span></th>' +
             '</tr>' +
             '<tr>' +
-            '<th colspan="6">&nbsp;</th>' +
+            '<th style="text-align: right;">Frachtbeziehungen:</th>' +
+            '<th colspan="5">' +
+            '<table style="border-spacing:1px;border-collapse:separate;">' +
+            '<thead>' +
+            '<tr>' +
+            '<th style="width: 350px;">Heimatbetriebsstelle</th>' +
+            '<th style="width: 350px;">Ladegut zum Empfang</th>' +
+            '<th style="width: 350px;">Empf&auml;nger</th>' +
+            '<th style="width: 350px;">Ladestelle</th>' +
+            '</tr>' +
+            '<tr>' +
+            '<th><select id="gs-empfangs-betriebsstelle" style="width: 350px;"></select></th>' +
+            '<th><select id="gs-empfangs-ladegut" style="width: 350px;display: none;"></select></th>' +
+            '<th><select id="gs-empfangs-verlader" style="width: 350px;display: none;"></select></th>' +
+            '<th><select id="gs-empfangs-ladestelle" style="width: 350px;display: none;"></select></th>' +
+            '</tr>' +
+            '</thead>' +
+            '</table>' +
+            '</th>' +
             '<th colspan="3"><button id="gs-aktuelle-ansicht-drucken">Aktuelle Ansicht drucken</button></th>' +
             '</tr>' +
             '<tr>' +
@@ -177,15 +209,90 @@ class GelbeSeiten {
         })
     }
 
-    ausfuehren(json) {
+    ausfuehren(versandJson, empfangJson) {
+        if (!versandJson) return;
+
         let epochenListen = {};
         // Vorsortierung: Alle JSON Objekte einer Epoche kommen in eine Liste (Zuordnung Epoche => [JSON-Objekte,...])
-        for (const eintrag of Object.values(json)) {
+        for (const eintrag of Object.values(versandJson)) {
             const epoche = eintrag['epoche'];
             if (epochenListen[epoche] === undefined) {
                 epochenListen[epoche] = [];
             }
             epochenListen[epoche].push(eintrag);
+        }
+
+        const empfangsBetriebsstellenWahl = document.getElementById('gs-empfangs-betriebsstelle');
+        if (empfangJson) {
+            let empfang = {};
+            for (const eintrag of Object.values(empfangJson)) {
+                const schluessel = eintrag['betriebsstelle'] + " (" + eintrag['kuerzel'] + ", "  + eintrag['epoche'] + ")";
+                if (empfang[schluessel] === undefined) {
+                    empfang[schluessel] = []
+                }
+                empfang[schluessel].push(eintrag);
+            }
+
+            empfangsBetriebsstellenWahl.appendChild(this.#optionenElement('#', 'Derzeit keine ausgewählt'));
+            Object.keys(empfang).forEach((eintrag) => {
+                empfangsBetriebsstellenWahl.appendChild(this.#optionenElement(eintrag, eintrag));
+            });
+            empfangsBetriebsstellenWahl.addEventListener('change', (event) => {
+                event.preventDefault();
+                const ladegutWahlElement = document.getElementById('gs-empfangs-ladegut');
+                this.#clearElement(ladegutWahlElement);
+                const verladerElement = document.getElementById('gs-empfangs-verlader');
+                this.#clearElement(verladerElement);
+                verladerElement.style.display = 'none';
+                const ladestellenElement = document.getElementById('gs-empfangs-ladestelle');
+                this.#clearElement(ladestellenElement);
+                ladestellenElement.style.display = 'none';
+                const betriebsstellenSchluessel = event.target.value;
+                if (betriebsstellenSchluessel !== '#') {
+                    ladegutWahlElement.appendChild(this.#optionenElement('#', 'Derzeit keines ausgewählt'));
+                    empfang[betriebsstellenSchluessel].forEach((eintrag) => {
+                        ladegutWahlElement.appendChild(this.#optionenElement(eintrag['produkt'], eintrag['produkt']));
+                        ladegutWahlElement.addEventListener('change', (event2) => {
+                            event2.preventDefault();
+                            const ladegutWahl = event2.target.value;
+                            if (ladegutWahl !== '#') {
+                                if (eintrag['produkt'] === ladegutWahl) {
+                                    this.#clearElement(verladerElement);
+                                    this.#clearElement(ladestellenElement);
+                                    if (this.#aktuelleFilterWerte['empfang'].length > 0) {
+                                        this.#aktuelleFilterWerte['empfang'] = [];
+                                    }
+
+                                    verladerElement.appendChild(this.#optionenElement(eintrag['empfaenger'], eintrag['empfaenger']));
+                                    verladerElement.style.display = 'inherit';
+
+                                    ladestellenElement.appendChild(this.#optionenElement(eintrag['ladestelle'], eintrag['ladestelle']));
+                                    ladestellenElement.style.display = 'inherit';
+
+                                    ladegutWahl.split(' ').forEach((ladegut) => {
+                                        // entferne etwaige Klammern, Kommas und andere Trennzeichen
+                                        const forAdd = ladegut.replaceAll(/[,\\(\\)\\/\\&]/g, "").trim();
+                                        if (forAdd.length > 0) {
+                                            this.#aktuelleFilterWerte['empfang'].push(forAdd);
+                                        }
+                                    });
+                                    this.#wendeGesamtFilterAufTabellenZeilenAn();
+                                }
+                            } else {
+                                this.#aktuelleFilterWerte['empfang'] = [];
+                                verladerElement.style.display = 'none';
+                                ladestellenElement.style.display = 'none';
+                                this.#wendeGesamtFilterAufTabellenZeilenAn();
+                            }
+                        });
+                    });
+                    ladegutWahlElement.style.display = 'inherit';
+                } else {
+                    ladegutWahlElement.style.display = 'none';
+                }
+                this.#aktuelleFilterWerte['empfang'] = [];
+                this.#wendeGesamtFilterAufTabellenZeilenAn();
+            });
         }
 
         this.#epocheAuswahlElement = document.getElementById('gs-epochen-auswahl');
@@ -258,7 +365,19 @@ class GelbeSeiten {
             return !filterWerte || eintragGefunden;
         }
 
-        this.#gesamtFilter = ({kategorie, produkt, versender, wagentyp, betriebsstelle, ladestelle, betriebsstellen, stueckgut, expressgut}, tabellenZeile) => {
+        const empfangsFilter = (filterWerte, tabellenZeile) => {
+            let eintragGefunden = false;
+            if (filterWerte.length > 0) {
+                tabellenZeile.querySelectorAll("td:nth-child(2)").forEach(spaltenEintrag => {
+                    eintragGefunden = filterWerte.find(filterWert => spaltenEintrag.textContent.toLowerCase().includes(filterWert.toLowerCase()));
+                });
+            } else {
+                eintragGefunden = true;
+            }
+            return !filterWerte || eintragGefunden;
+        }
+
+        this.#gesamtFilter = ({kategorie, produkt, versender, wagentyp, betriebsstelle, ladestelle, betriebsstellen, stueckgut, expressgut, empfang}, tabellenZeile) => {
             return spaltenTextFilter(kategorie, tabellenZeile, 1)
                 && spaltenTextFilter(produkt, tabellenZeile, 2)
                 && spaltenTextFilter(versender, tabellenZeile, 3)
@@ -267,7 +386,8 @@ class GelbeSeiten {
                 && spaltenTextFilter(ladestelle, tabellenZeile, 6)
                 && spaltenTextFilter(stueckgut, tabellenZeile, 7)
                 && spaltenTextFilter(expressgut, tabellenZeile, 8)
-                && betriebsstellenFilter(betriebsstellen, tabellenZeile);
+                && betriebsstellenFilter(betriebsstellen, tabellenZeile)
+                && empfangsFilter(empfang, tabellenZeile);
         }
 
         window.addEventListener('input', event => {
@@ -322,6 +442,7 @@ class GelbeSeiten {
                 element.dispatchEvent(new Event('change', { bubbles: true }));
                 element.parentElement.dispatchEvent(new Event('reset', { bubbles: true }));
             });
+            empfangsBetriebsstellenWahl.dispatchEvent(new Event('change', { bubbles: true }));
             this.#erneuereAnzeigeBetriebsstellenAuswahl();
             this.#wendeGesamtFilterAufTabellenZeilenAn();
         });
@@ -334,17 +455,13 @@ class GelbeSeiten {
 }
 
 // provides new scope avoiding error of redeclaration
-(function () {
+(async function () {
     const scriptElement = document.getElementById('gelbe-seiten-anwendung');
-    const fileUrl = scriptElement.dataset.fileUrl.trim();
+    const fileUrl = scriptElement.dataset.versandUrl?.trim();
+    const empfangsUrl = scriptElement.dataset.empfangUrl?.trim();
     const anwendung = new GelbeSeiten();
     anwendung.erstelleBenutzerSchnittstelle(scriptElement);
-    fetch(fileUrl)
-        .then((response) => {
-            if (response.ok) {
-                return response.json()
-            }
-            throw new Error(`Datei nicht gefunden: ${response.url}`);
-        })
-        .then(content => anwendung.ausfuehren(content), e => console.error(e));
+    const contents = await Promise.all([fetch(fileUrl), fetch(empfangsUrl)]);
+    const [versand, empfang] = await Promise.all(contents.map( async (r) => { if (r.ok) return await r.json(); else return null; }));
+    anwendung.ausfuehren(versand, empfang);
 })();
