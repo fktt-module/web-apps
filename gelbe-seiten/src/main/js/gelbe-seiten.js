@@ -329,9 +329,7 @@ class GelbeSeiten {
                 vorhandeneBetriebsstellen[eintrag['kuerzel']] = eintrag['betriebsstelle'];
             }
             const betriebsstellenListe = document.getElementById('betriebsstellen-liste');
-            if (betriebsstellenListe.hasChildNodes()) {
-                betriebsstellenListe.innerHTML = '';
-            }
+            this.#clearElement(betriebsstellenListe);
             for (const [kuerzel, name] of Object.entries(vorhandeneBetriebsstellen)) {
                 const listenElement = document.createElement("option");
                 listenElement.value = `${name}`;
