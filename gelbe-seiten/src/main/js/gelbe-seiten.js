@@ -1,4 +1,5 @@
 class GelbeSeiten {
+    static #fuellWoerter = ['und', 'oder', 'in', 'für', 'als', 'nach', 'auch', 'von', 'usw.'];
     #standardEpoche = 'IV';
     #aktuelleFilterWerte = {
         kategorie: '',
@@ -270,13 +271,16 @@ class GelbeSeiten {
                                     ladestellenElement.appendChild(this.#optionenElement(eintrag['ladestelle'], eintrag['ladestelle']));
                                     ladestellenElement.style.display = 'inherit';
 
-                                    ladegutWahl.split(' ').forEach((ladegut) => {
-                                        // entferne etwaige Klammern, Kommas und andere Trennzeichen
-                                        const forAdd = ladegut.replaceAll(/[,\\(\\)\\/\\&]/g, "").trim();
-                                        if (forAdd.length > 0) {
-                                            this.#aktuelleFilterWerte['empfang'].push(forAdd);
-                                        }
-                                    });
+                                    // Ladegüteraufzählung an Leerzeichen, Komma, Schrägstrich oder kaufmännischem und trennen
+                                    ladegutWahl.split(/[\s,/&]/)
+                                        // leere Werte aus dem Array entfernen
+                                        .filter(v => v.trim().length > 0)
+                                        // Klammern am Anfang und Ende aller Arrayelemente entfernen
+                                        .map(v => v.trim().replaceAll(/[()]/g, "").trim())
+                                        // typische Füllwörter aus dem Array entfernen
+                                        .filter(v => !GelbeSeiten.#fuellWoerter.includes(v.trim().toLowerCase()))
+                                        // noch vorhandene Arrayelemente zum Filter hinzufügen
+                                        .forEach(ladegut => this.#aktuelleFilterWerte['empfang'].push(ladegut.trim()));
                                     this.#wendeGesamtFilterAufTabellenZeilenAn();
                                 }
                             } else {
