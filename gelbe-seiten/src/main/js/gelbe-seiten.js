@@ -132,15 +132,15 @@ class GelbeSeiten {
             '<th style="min-width: 131px;">Besonderheiten</th>' +
             '</tr>' +
             '<tr>' +
-            '<th><form><input type="text" name="kategorie" class="gs-text-filter" size="10" disabled="disabled"><button type="reset" class="entfernen-symbol"></button></form></th>' +
-            '<th><form><input type="text" name="produkt" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></form></th>' +
-            '<th><form><input type="text" name="versender" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></form></th>' +
-            '<th><form><input type="text" name="wagentyp" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></form></th>' +
-            '<th><form><input type="text" name="betriebsstelle" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></form></th>' +
-            '<th><form><input type="text" name="ladestelle" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></form></th>' +
-            '<th><form><input type="checkbox" name="stueckgut" class="gs-ankreuz-filter"></form></th>' +
-            '<th><form><input type="checkbox" name="expressgut" class="gs-ankreuz-filter"></form></th>' +
-            '<th><form><input type="text" class="gs-text-filter" size="10" disabled="disabled"><button type="reset" class="entfernen-symbol"></button></form></th>' +
+            '<th><input type="text" name="kategorie" class="gs-text-filter" size="10" disabled="disabled"><button type="reset" class="entfernen-symbol"></button></th>' +
+            '<th><input type="text" name="produkt" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></th>' +
+            '<th><input type="text" name="versender" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></th>' +
+            '<th><input type="text" name="wagentyp" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></th>' +
+            '<th><input type="text" name="betriebsstelle" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></th>' +
+            '<th><input type="text" name="ladestelle" class="gs-text-filter" size="10"><button type="reset" class="entfernen-symbol"></button></th>' +
+            '<th><input type="checkbox" name="stueckgut" class="gs-ankreuz-filter"></th>' +
+            '<th><input type="checkbox" name="expressgut" class="gs-ankreuz-filter"></th>' +
+            '<th><input type="text" class="gs-text-filter" size="10" disabled="disabled"><button type="reset" class="entfernen-symbol"></button></th>' +
             '</tr>' +
             '</thead>' +
             '<tbody id="table-rows">' +
@@ -202,6 +202,7 @@ class GelbeSeiten {
                 eingabeEntfernenElement.style.display = "none";
                 this.#aktuelleFilterWerte[eingabeFeld.name] = '';
                 this.#wendeGesamtFilterAufTabellenZeilenAn();
+                eingabeFeld.value = '';
             };
             eingabeFeld.onkeyup = function (ev) {
                 eingabeEntfernenElement.style.display = (ev.target.value) ? "inline" : "none";
@@ -430,16 +431,8 @@ class GelbeSeiten {
                     this.#aktuelleFilterWerte[filterName] = '';
                 }
             });
-            document.querySelectorAll('button.entfernen-symbol').forEach(element => {
-                // Klick Event für den Button reicht nicht aus, da es die Eingabefelder nicht zurücksetzt ...
-                element.dispatchEvent(new Event('click', { bubbles: true }));
-                // ... daher beim Eltern-Element auch noch ein Reset Ereignis auslösen
-                element.parentElement.dispatchEvent(new Event('reset', { bubbles: true }));
-            });
-            document.querySelectorAll('input.gs-ankreuz-filter').forEach(element => {
-                element.dispatchEvent(new Event('change', { bubbles: true }));
-                element.parentElement.dispatchEvent(new Event('reset', { bubbles: true }));
-            });
+            document.querySelectorAll('button.entfernen-symbol').forEach(element => element.click());
+            document.querySelectorAll('input.gs-ankreuz-filter').forEach(element => element.checked = false);
             empfangsBetriebsstellenWahl.dispatchEvent(new Event('change', { bubbles: true }));
             this.#erneuereAnzeigeBetriebsstellenAuswahl();
             this.#wendeGesamtFilterAufTabellenZeilenAn();
