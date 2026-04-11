@@ -135,7 +135,7 @@ class Frachtkarte {
             eingabeElement.addEventListener('keydown', (i) => {
                 if (i.key === 'Enter' || i.key === 'Escape') {
                     /** @type String */
-                    const wert = fenster.escapedHTMLPolicy.createHTML(i.target.value);
+                    const wert = fenster.escapedHTMLPolicy.createHTML(i.target.value).toString();
                     elternElement.removeChild(eingabeElement);
                     elternElement.textContent = wert;
                     resolve(wert);
