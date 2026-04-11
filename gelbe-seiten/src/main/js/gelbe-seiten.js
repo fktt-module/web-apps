@@ -840,7 +840,7 @@ class GelbeSeiten {
                     event.preventDefault();
                     if (empfangsBetriebsstellenWahl.value !== '#' && ladegutWahlElement.value !== '#') {
                         this.#frachtkartenSpeicher.push(this.#frachtkartenSpeicher.erzeugeFrachtkarte(
-                            eintrag, empfang[empfangsBetriebsstellenWahl.value].find((empfangEintrag) => empfangEintrag['produkt'] === ladegutWahlElement.value)));
+                            structuredClone(eintrag), structuredClone(empfang[empfangsBetriebsstellenWahl.value].find((empfangEintrag) => empfangEintrag['produkt'] === ladegutWahlElement.value))));
                     }
                 });
                 tabellenKoerper.appendChild(zeilenElement);
