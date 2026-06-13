@@ -1,0 +1,10 @@
+{
+  "name": "fktt-web-apps",
+  "version": "2026.7",
+  "description": "",
+  "author": "euvbonk",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^8.0.12"
+  }
+}
