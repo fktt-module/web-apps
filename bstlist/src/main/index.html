@@ -2,13 +2,14 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="build" content="%VITE_BUILD%" />
 <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 <title>FKTT-Betriebsstellendatenbl&auml;tter</title>
 </head>
 <body>
-    <h1>Die Betriebstellen des FKTT und ihre Daten</h1>
-<fktt-sds-plugin>
-    <script src="js/bstlist.js" type="module" crossorigin id="bstlist-anwendung" data-json-or-url="bahnhof.json" data-zip-file="datenblaetter_gelbe-seiten.zip" data-yellow-pages="gelbe-seiten.html"></script>
-</fktt-sds-plugin>
+<h1>Die Betriebsstellen des FKTT und ihre Daten</h1>
+<fktt-bstlist-plugin base-url="" json-or-url='bahnhof.json' zip-file="datenblaetter_gelbe-seiten.zip" yellow-pages="gelbe-seiten.html">
+</fktt-bstlist-plugin>
+<script src="js/bstlist.js" type="module" crossorigin></script>
 </body>
 </html>

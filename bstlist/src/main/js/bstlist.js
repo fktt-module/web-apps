@@ -1,14 +1,14 @@
-class BetriebsstellenListe {
+class BetriebsstellenListe extends HTMLElement {
     #defaultEpoch = 'IV';
     #languages = {0: 'DE', 1: 'EN', 2: 'CS'};
     #sortingColumnOptions = [{
         description: 'Betriebsstellenname (aufsteigend)',
         style: ['none', 'inline', 'inline', 'none', 'inline', 'none'],
-        compareFunction: function(a, b) { return a['name'].localeCompare(b['name']); }
+        compareFunction: function(a, b) { return a['name'].localeCompare(b['name'], 'de', { sensitivity: 'base' }); }
     }, {
         description: 'Kürzel (aufsteigend)',
         style: ['inline', 'none', 'none', 'inline', 'inline', 'none'],
-        compareFunction: function(a, b) { return a['kuerzel'].localeCompare(b['kuerzel']); }
+        compareFunction: function(a, b) { return a['kuerzel'].localeCompare(b['kuerzel'], 'de', { sensitivity: 'base' }); }
     }, {
         description: 'Letzte Änderung (absteigend)',
         style: ['inline', 'none', 'inline', 'none', 'none', 'inline'],
@@ -26,10 +26,35 @@ class BetriebsstellenListe {
     #columnSelectElement = undefined;
     #nameFilterElement = undefined;
 
-    constructor(baseUrl, zipFileName = null, yellowPages = null) {
-        this.#baseUrl = baseUrl;
-        this.#zipFileName = zipFileName;
-        this.#yellowPages = yellowPages;
+    // noinspection JSUnusedGlobalSymbols
+    async connectedCallback() {
+        this.#baseUrl = this.getAttribute("base-url")?.trim() || '';
+        this.#baseUrl = this.#baseUrl.concat(Math.abs(this.#baseUrl.length - this.#baseUrl.lastIndexOf('/')) === 1 ? '' : '/');
+        this.#zipFileName = this.#baseUrl + this.getAttribute("zip-file")?.trim();
+        this.#yellowPages = this.#baseUrl + this.getAttribute("yellow-pages")?.trim();
+        this.attachShadow({ mode: 'open' });
+        this.init(this.shadowRoot);
+
+        let content = null;
+        const jsonOrUrl = this.getAttribute("json-or-url")?.trim();
+        try {
+            content = JSON.parse(jsonOrUrl);
+        } catch (SyntaxError) {
+            let response;
+            try {
+                response = await fetch(this.#baseUrl + jsonOrUrl);
+            } catch (e) {
+                if (e instanceof TypeError) {
+                    console.warn(`Laden der lokalen Datei "${jsonOrUrl}" nicht erlaubt, JSON Inhalt direkt übergeben!`);
+                }
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(`Datei nicht gefunden: ${response.url}`);
+            }
+            content = await response.json();
+        }
+        this.run(content);
     }
 
     #ce(elementName) {
@@ -93,7 +118,7 @@ class BetriebsstellenListe {
 
     #buildUpdateTableRows(tableRowContent) {
         // check if tbody has children elements aka content
-        const tbody = document.getElementById('table-rows');
+        const tbody = this.shadowRoot.getElementById('table-rows');
         if (tbody.hasChildNodes()) {
             tbody.textContent = '';
         }
@@ -130,7 +155,7 @@ class BetriebsstellenListe {
             ));
         });
         // add event handlers for the different views
-        Array.from(document.getElementsByClassName("datenblatt-sprachauswahl")).forEach(item => {
+        Array.from(this.shadowRoot.querySelectorAll(".datenblatt-sprachauswahl")).forEach(item => {
             item.addEventListener("change", event => {
                 event.preventDefault();
                 const tref = event.target.value;
@@ -154,7 +179,7 @@ class BetriebsstellenListe {
         const epochSelection = this.#epochSelectElement.value;
         const sortingSelection = this.#sortingColumnOptions[this.#columnSelectElement.value];
         this.#allInEpochs[epochSelection].sort(sortingSelection.compareFunction);
-        Array.from(document.getElementsByClassName('bstlist-sortierbare-spalten')).forEach((item, index) => {
+        Array.from(this.shadowRoot.querySelectorAll('.bstlist-sortierbare-spalten')).forEach((item, index) => {
             // marks the table column head where to sort of
             item.style['display'] = sortingSelection.style[index];
         })
@@ -171,14 +196,24 @@ class BetriebsstellenListe {
     }
 
     async #toggleVisibilitySetLastChangeFor(paragraphId, timeStampId) {
-        const url = document.querySelector(`#${paragraphId} > a`).getAttribute('href');
-        return await fetch(url, {method: 'HEAD'}).then((response) => {
-            if (response.ok) {
-                let _date = new Date(Date.parse(response.headers.get("Last-Modified")));
-                document.getElementById(timeStampId).textContent = _date.toLocaleString('de-DE', this.#dateOptions);
-                document.getElementById(paragraphId).setAttribute('style', 'display:block;');
+        const url = this.shadowRoot.querySelector(`#${paragraphId} > a`)?.getAttribute('href');
+        if (url) {
+            let _date = new Date(Date.parse(document.querySelector("meta[name='build']")?.content));
+            try {
+                const response = await fetch(url, {method: 'HEAD'});
+                if (response.ok && response.headers.get("Last-Modified") !== null) {
+                    _date = new Date(Date.parse(response.headers.get("Last-Modified")));
+                    /*if (!isNaN(_date.valueOf())) {
+                    }*/
+                }
+            } catch (e) {
+                if (e instanceof TypeError) {
+                    console.warn(`Laden von Meta Informationen der lokalen Datei "${url}" nicht erlaubt, wird ignoriert.`);
+                }
             }
-        });
+            this.shadowRoot.getElementById(timeStampId).textContent = _date.toLocaleString('de-DE', this.#dateOptions);
+            this.shadowRoot.getElementById(paragraphId).setAttribute('style', 'display:block;');
+        }
     }
 
     async #setZipLastEdited() {
@@ -214,7 +249,7 @@ class BetriebsstellenListe {
             '<tr style="background-color:#C0C0C0;">' +
             '<th>Lfd. Nr.</th>' +
             '<th><span class="bstlist-sortierbare-spalten" style="display:none">Betriebsstellenname</span><span style="color:red;display:inline" class="bstlist-sortierbare-spalten">Betriebsstellenname&nbsp;&#8593;</span></th>' +
-            '<th><span class="bstlist-sortierbare-spalten" style="display:inline">K&uuml;rzel</span><span style="color:red;display:none" class="bstlist-sortierbare-spalten">K&uuml;rzel&nbsp;&#8593;</span></th>' +
+            '<th><span class="bstlist-sortierbare-spalten" style="display:inline">K&uuml;rzel/Sprache</span><span style="color:red;display:none" class="bstlist-sortierbare-spalten">K&uuml;rzel/Sprache&nbsp;&#8593;</span></th>' +
             '<th>Kategorie</th>' +
             '<th><span class="bstlist-sortierbare-spalten" style="display:inline">Letzte &Auml;nderung</span><span style="color:red;display:none" class="bstlist-sortierbare-spalten">Letzte &Auml;nderung&nbsp;&#8595;</span></th>' +
             '<th>Spezial Ansicht</th>' +
@@ -236,14 +271,14 @@ class BetriebsstellenListe {
         }
         const uiElement = document.createElement('template');
         uiElement.innerHTML = ui.trim();
-        Array.from(uiElement.content.childNodes).forEach(c => refNode.parentNode.insertBefore(c, refNode));
+        Array.from(uiElement.content.childNodes).forEach(c => refNode.appendChild(c));
     }
 
     run(result) {
 
-        this.#epochSelectElement = document.getElementById('bstlist-epochenauswahl');
-        this.#columnSelectElement = document.getElementById('bstlist-spaltenauswahl');
-        this.#nameFilterElement = document.getElementById('bstlist-betriebsstellenauswahl');
+        this.#epochSelectElement = this.shadowRoot.getElementById('bstlist-epochenauswahl');
+        this.#columnSelectElement = this.shadowRoot.getElementById('bstlist-spaltenauswahl');
+        this.#nameFilterElement = this.shadowRoot.getElementById('bstlist-betriebsstellenauswahl');
 
         // convert result json to an object containing arrays for each epoch
         for (const [key, val] of Object.entries(result)) {
@@ -269,7 +304,7 @@ class BetriebsstellenListe {
         this.#columnSelectElement.addEventListener('change', this.#changeEventHandler.bind(this));
         this.#epochSelectElement.addEventListener('change', this.#changeEventHandler.bind(this));
         this.#nameFilterElement.addEventListener('input', this.#changeEventHandler.bind(this));
-        document.getElementById('bstlist-filter-entfernen').addEventListener('click', ev => {
+        this.shadowRoot.getElementById('bstlist-filter-entfernen').addEventListener('click', ev => {
             ev.preventDefault();
             this.#changeEventHandler(null);
         });
@@ -278,18 +313,5 @@ class BetriebsstellenListe {
         void this.#setYellowPagesLastEdited();
     }
 }
-(function () {
-    const el = document.getElementById('bstlist-anwendung');
-    const jsonOrUrl = el.dataset.jsonOrUrl.trim();
-    const handler = new BetriebsstellenListe(
-        jsonOrUrl.toString().substring(0, jsonOrUrl.toString().lastIndexOf('/') + 1),
-        el.dataset.zipFile.trim(), el.dataset.yellowPages.trim());
-    handler.init(el);
-    fetch(jsonOrUrl)
-        .then((response) => {
-            if (response.ok) {
-                return response.json()
-            }
-            throw new Error(`Datei nicht gefunden: ${response.url}`);
-        }).then((content) => handler.run(content), e => console.error(e));
-})();
+
+customElements.define("fktt-bstlist-plugin", BetriebsstellenListe);

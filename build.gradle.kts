@@ -75,6 +75,10 @@ gradle.projectsEvaluated {
             dependsOn("viteBuild")
             val base64prefix = "data:application/javascript;base64,"
             val base64bytes = project.tasks.named("viteBuild").get().outputs.files.singleFile
+            val buildTimeStamp = java.time.Instant.now().toString()
+            fun base64encoder(fileToEncode: java.io.File): String {
+                return java.util.Base64.getEncoder().encodeToString(fileToEncode.readBytes())
+            }
             from(tasks.named("viteBuild").get().outputs.files.singleFile) {
                 rename { _ -> "${distributionFileName}.min.js" }
             }
@@ -82,16 +86,32 @@ gradle.projectsEvaluated {
                 include("index.html")
                 rename { fileName -> fileName.replace("index", "${projectName}-min") }
                 filter { it -> it.replace("js/${projectName}", "${distributionFileName}.min") }
+                filter { iu -> iu.replace("%VITE_BUILD%", buildTimeStamp) }
             }
             from(resourcesDir) {
                 include("index.html")
-                rename { fileName -> fileName.replace("index", "${projectName}-base64") }
+                rename { fileName -> fileName.replace("index", "${projectName}-spa") }
                 filter { it ->
                     it.replace(
                         "js/${projectName}.js",
-                        base64prefix + java.util.Base64.getEncoder().encodeToString(base64bytes.readBytes())
+                        base64prefix + base64encoder(base64bytes)
                     )
                 }
+                filter { iu -> iu.replace("%VITE_BUILD%", buildTimeStamp) }
+            }
+            from(resourcesDir) {
+                include("index.html")
+                rename { fileName -> fileName.replace("index", "${projectName}-spa-client") }
+                filter { it ->
+                    it.replace(
+                        "js/${projectName}.js",
+                        base64prefix + base64encoder(base64bytes)
+                    )
+                }
+                // remove type and crossorigin for local use without server
+                filter { it -> it.replace(" type=\"module\"", "") }
+                filter { it -> it.replace(" crossorigin", "") }
+                filter { iu -> iu.replace("%VITE_BUILD%", buildTimeStamp) }
             }
             if (project.hasProperty("githubPagesUrl") && project.ext.has("urlFileNameFilterValues")) {
                 val url = project.property("githubPagesUrl").toString() + "/"
@@ -100,13 +120,14 @@ gradle.projectsEvaluated {
                     include("index.html")
                     rename { fileName -> fileName.replace("index", "${projectName}-min${suffix}") }
                     filter { it -> it.replace("js/${projectName}", "${distributionFileName}.min") }
+                    filter { iu -> iu.replace("%VITE_BUILD%", buildTimeStamp) }
                     (project.ext.get("urlFileNameFilterValues") as Array<*>).map { str -> str as String }
                         .forEach { fn ->
                             run {
                                 filter { it ->
                                     it.replace(
                                         fn,
-                                        url + fn
+                                        fn + url
                                     )
                                 }
                             }
@@ -114,20 +135,21 @@ gradle.projectsEvaluated {
                 }
                 from(resourcesDir) {
                     include("index.html")
-                    rename { fileName -> fileName.replace("index", "${projectName}-base64${suffix}") }
+                    rename { fileName -> fileName.replace("index", "${projectName}-spa${suffix}") }
                     filter { it ->
                         it.replace(
                             "js/${projectName}.js",
-                            base64prefix + java.util.Base64.getEncoder().encodeToString(base64bytes.readBytes())
+                            base64prefix + base64encoder(base64bytes)
                         )
                     }
+                    filter { iu -> iu.replace("%VITE_BUILD%", buildTimeStamp) }
                     (project.ext.get("urlFileNameFilterValues") as Array<*>).map { str -> str as String }
                         .forEach { fn ->
                             run {
                                 filter { it ->
                                     it.replace(
                                         fn,
-                                        url + fn
+                                        fn + url
                                     )
                                 }
                             }
